@@ -11,7 +11,7 @@ typedef struct io_uring_params ring_params_t;
 typedef struct app_io_ring_s {
     int ring_fd;
 
-    unsigned *sq_head;    
+    unsigned *sq_head;
     unsigned *sq_tail;
     unsigned *sq_mask;
     unsigned *sq_array;
