@@ -1,3 +1,7 @@
+# Custom ignores
+# main.cpp and main.c used for testing
+main.c*
+
 # Prerequisites
 *.d
 
