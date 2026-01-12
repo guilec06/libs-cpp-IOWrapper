@@ -2,6 +2,9 @@
 # main.cpp and main.c used for testing
 main.c*
 
+# IDE related files and directories
+.vscode/
+
 # Prerequisites
 *.d
 
