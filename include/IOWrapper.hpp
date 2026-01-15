@@ -2,6 +2,7 @@
 #define IOWRAPPER_HPP_
 
 #include "AsyncIOInterface.hpp"
+#include "IOPromise.hpp"
 
 enum io_mode_t {
     READ,
@@ -42,7 +43,7 @@ class FileIOWrapper : public IOWrapper {
 
 class SocketIOWrapper : public IOWrapper {
     public:
-        int send(std::string &buffer, int n = -1);  
+        int send(std::string &buffer, int n = -1);
         int recv(std::string &buffer, int n = -1);
         SocketIOWrapper accept();
         void setNonBlocking(bool enable);
