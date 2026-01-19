@@ -1,8 +1,8 @@
 #ifndef IOWRAPPER_HPP_
 #define IOWRAPPER_HPP_
 
-#include "AsyncIOInterface.hpp"
-#include "IOPromise.hpp"
+#include "AsyncIORing.hpp"
+#include "Promise.hpp"
 
 enum io_mode_t {
     READ,
@@ -32,8 +32,8 @@ class FileIOWrapper : public IOWrapper {
     public:
         int write(std::string &buffer, int n = -1);
         int read(std::string &buffer, int n = -1);
-        int asyncWrite(std::string &buffer, int n = -1, IOCallback callback = nullptr);
-        int asyncRead(std::string &buffer, int n = -1, IOCallback callback = nullptr);
+        int asyncWrite(std::string &buffer, int n = -1);
+        int asyncRead(std::string &buffer, int n = -1);
         void flush();
         off_t seek(off_t offset, int whence = SEEK_SET);
         off_t tell() const;
