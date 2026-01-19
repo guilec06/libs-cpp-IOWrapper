@@ -2,7 +2,7 @@ CXX	=	g++
 CXXFLAGS = -Wall -Wextra -O2 -g
 INCLUDES = -Iinclude -Iinclude/io_uring
 
-CXX_SRCS = src/Async/AsyncIOInterface.cpp
+CXX_SRCS = src/Async/AsyncIORing.cpp
 CXX_OBJS = $(CXX_SRCS:.cpp=.o)
 
 C_OBJS = src/io_uring/ring_access.o src/io_uring/ring_ressource_manager.o
