@@ -1,11 +1,15 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/syscall.h>
+#include <unistd.h>
+#include <stdatomic.h>
+#include <linux/io_uring.h>
 #include "ring.h"
 
 struct io_uring_sqe *ring_get_sqe(ring_t *ring)
 {
-    unsigned tail = *ring->sq_tail;
+    unsigned tail = atomic_load_explicit(ring->sq_tail, memory_order_relaxed);
     unsigned head = *ring->sq_head;
     unsigned index;
     struct io_uring_sqe *sqe = NULL;
@@ -25,7 +29,7 @@ void ring_register_sqe(ring_t *ring)
 
     ring->sq_array[index] = index;
     __sync_synchronize();
-    *ring->sq_tail = tail + 1;
+    atomic_store_explicit(ring->sq_tail, tail + 1, memory_order_release);
 }
 
 int ring_submit(ring_t *ring)
@@ -35,7 +39,7 @@ int ring_submit(ring_t *ring)
 
     if (to_submit == 0)
         return 0;
-    ret = io_uring_enter(ring->ring_fd, to_submit, 0, 0, NULL);
+    ret = syscall(SYS_io_uring_enter, ring->ring_fd, to_submit, 0, 0, NULL);
     if (ret < 0) {
         perror("io_uring_enter");
         return -1;
@@ -62,4 +66,9 @@ void ring_cqe_seen(ring_t *ring)
 {
     __sync_synchronize();
     *ring->cq_head = *ring->cq_head + 1;
+}
+
+void ring_kernel_sqpoll_wakeup(ring_t *ring)
+{
+    syscall(SYS_io_uring_enter, ring->ring_fd, 0, 0, IORING_ENTER_SQ_WAKEUP, NULL);
 }

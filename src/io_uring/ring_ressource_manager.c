@@ -6,19 +6,10 @@
 #include <signal.h>
 #include <sys/mman.h>
 #include <string.h>
+#include <linux/io_uring.h>
 #include "ring.h"
 
-int io_uring_setup(unsigned entries, struct io_uring_params *p)
-{
-    return syscall(__NR_io_uring_setup, entries, p);
-}
-
-int io_uring_enter(int fd, unsigned to_submit, unsigned min_complete, unsigned flags, sigset_t *sig)
-{
-    return syscall(__NR_io_uring_enter, fd, to_submit, min_complete, flags, sig, _NSIG / 8);
-}
-
-ring_t *ring_init(unsigned depth)
+ring_t *ring_init(unsigned depth, ring_params_t params)
 {
     if (depth == 0 || depth > 4096) {
         fprintf(stderr, "Invalid depth: %u\n", depth);
@@ -26,7 +17,6 @@ ring_t *ring_init(unsigned depth)
     }
 
     ring_t *ring = malloc(sizeof(ring_t));
-    ring_params_t params;
     void *sq_ptr, *cq_ptr;
     size_t sq_size, cq_size = 0;
 
@@ -37,7 +27,7 @@ ring_t *ring_init(unsigned depth)
 
     memset(&params, 0, sizeof(params));
 
-    ring->ring_fd = io_uring_setup(depth, &params);
+    ring->ring_fd = syscall(SYS_io_uring_setup, depth, &params);
 
     if (ring->ring_fd < 0) {
         perror("ring fd failure");
@@ -139,12 +129,9 @@ void ring_destroy(ring_t *ring) {
     cq_ptr = (char *)ring->cq_mask - ring->params.cq_off.ring_mask;
     sq_size = ring->params.sq_off.array + ring->params.sq_entries * sizeof(unsigned);
 
-    // unmap submission queue
     munmap(sq_ptr, sq_size);
 
-    // checks for dual map
     if (!IS_SINGLE_MAP(ring->params)) {
-        // unmap completion queue
         cq_size = ring->params.cq_off.cqes + ring->params.cq_entries * sizeof(struct io_uring_cqe);
         munmap(cq_ptr, cq_size);
     }
