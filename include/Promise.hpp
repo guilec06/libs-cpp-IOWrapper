@@ -30,6 +30,51 @@ class Promise {
             return promise;
         }
 
+        static std::shared_ptr<Promise<std::vector<T>>> all(std::vector<std::shared_ptr<Promise<T>>> promises)
+        {
+            auto bundle = std::make_shared<Promise<std::vector<T>>>();
+
+            if (promises.empty()) {
+                bundle->resolve(std::vector<T>{});
+                return bundle;
+            }
+
+            struct BundleState {
+                std::mutex mut;
+                std::vector<T> results;
+                size_t completed = 0;
+                size_t total;
+                bool rejected = false;
+
+                BundleState(size_t n) : results(n), total(n) {}
+            };
+            auto state = std::make_shared<BundleState>(promises.size());
+
+            for (size_t i = 0; i < promises.size(); ++i) {
+                promises[i]->then([bundle, state, i](T& val) {
+                    std::lock_guard<std::mutex> lock(state->mut);
+
+                    if (state->rejected) return;
+
+                    state->results[i] = val;
+                    state->completed++;
+
+                    if (state->completed == state->total) {
+                        bundle->resolve(std::move(state->results));
+                    }
+                }).catch_([bundle, state](int err) {
+                    std::lock_guard<std::mutex> lock(state->mut);
+
+                    if (state->rejected) return;
+
+                    state->rejected = true;
+                    bundle->reject(err);
+                });
+            }
+
+            return bundle;
+        }
+
         void resolve(T&& val)
         {
             std::vector<std::function<void(T&)>> thenCbs;
